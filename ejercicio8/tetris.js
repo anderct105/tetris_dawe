@@ -1,13 +1,8 @@
-// ************************************
-// *     EJERCICIO 1                   *
-// ************************************
-
-
-// ============== Point =======================
+var timer = 0;
 
 function Point (x, y) {
 	this.x = x;
-	this.y = y;    
+	this.y = y;
 }
 
 // ============== Rectangle ====================
@@ -23,13 +18,13 @@ Rectangle.prototype.init = function(p1,p2) {
 }
 
 Rectangle.prototype.draw = function() {
-
-	// TU CÓDIGO AQUÍ:
-	// pinta un rectángulo del color actual en pantalla en la posición px,py, con
-	// la anchura y altura actual y una línea de anchura=lineWidth. Ten en cuenta que 
-	// en este ejemplo la variable ctx es global y que guarda el contexto (context) 
-	// para pintar en el canvas.	
+	ctx.fillStyle = this.color
+	ctx.lineWidth = this.lineWidth
+	ctx.strokeStyle = 'black'
+	ctx.fillRect(this.px, this.py, this.width, this.height)
+	ctx.strokeRect(this.px, this.py, this.width, this.height)
 }
+
 
 
 Rectangle.prototype.setLineWidth = function(width) { this.lineWidth=width}
@@ -60,27 +55,26 @@ Rectangle.prototype.erase = function(){
 // ============== Block ===============================
 
 function Block (pos, color) {
-
-	// TU CÓDIGO AQUÍ: este es el constructor de la clase Block. Recibe dos parámetros, pos y color. Pos = posición de la casilla, por ejemplo, (9,19).
-	// color = color que hay que emplear para pintar el bloque.
-	// Internamente este método crea dos puntos (empleando las coordenadas del pixel)
-	// y llama al método init de la clase Rectangle, pasándole como parámetro,
-	// estos dos puntos.
-	// Sería interesante que emplearas las constantes Block.BLOCK_SIZE y Block.OUTLINE_WIDTH,
-	// para establecer la anchura del bloque y la anchura de la línea, respectivamente.
+	var p1 = new Point (pos.x*Block.BLOCK_SIZE , pos.y*Block.BLOCK_SIZE)
+	var p2 = new Point (Block.BLOCK_SIZE+pos.x*Block.BLOCK_SIZE,Block.BLOCK_SIZE+pos.y*Block.BLOCK_SIZE);
+	this.init(p1, p2)
+	this.color = color
+	this.lineWidth = Block.OUTLINE_WIDTH
 }
+
 
 Block.BLOCK_SIZE = 30;
 Block.OUTLINE_WIDTH = 2;
 
-// TU CÓDIGO AQUÍ: emplea el patrón de herencia (Block es un Rectangle)
+// TU CÓDIGO: emplea el patrón de herencia (Block es un Rectangle)
+Block.prototype = new Rectangle()
+Block.prototype.constructor = Block
 
 /** Método introducido en el EJERCICIO 4 */
 
 Block.prototype.move = function(dx, dy) {
 	this.x += dx;
 	this.y += dy;
-
 	Rectangle.prototype.move.call(this, dx * Block.BLOCK_SIZE, dy * Block.BLOCK_SIZE);
 }
 
@@ -89,9 +83,16 @@ Block.prototype.move = function(dx, dy) {
  ***************************************************/
 
 Block.prototype.can_move = function(board, dx, dy) {
-   // TU CÓDIGO AQUÍ: toma como parámetro un increment (dx,dy)
-  // e indica si es posible mover el bloque actual si 
- // incrementáramos su posición en ese valor
+	if (dx  < 0 || dx > this.width * Block.BLOCK_SIZE  || dy < 0 || dy > this.height * Block.BLOCK_SIZE) {
+		return false;
+	}
+	if (String([dx,dy]) in board.grid) {
+		return false;
+	}
+	/* EJERCICIO 7 */
+	// TU CÓDIGO AQUÍ: código para detectar colisiones. Si la posición x,y está en el diccionario grid, devolver false y true en cualquier otro caso.
+
+	return true;
 }
 
 // ************************************
@@ -103,20 +104,16 @@ function Shape() {}
 
 Shape.prototype.init = function(coords, color) {
 
-	// TU CÓDIGO AQUÍ: método de inicialización de una Pieza del tablero
-	// Toma como parámetros: coords, un array de posiciones de los bloques
-	// que forman la Pieza y color, un string que indica el color de los bloques
-	// Post-condición: para cada coordenada, crea un bloque de ese color y lo guarda en un bloque-array
-
+	this.block_array = []
+	coords.forEach(x => this.block_array.push(new Block(x, color)))
 	/*8 Atributo introducido en el EJERCICIO 8*/
 	this.rotation_dir = 1;
+	this.blocks = this.block_array
 
 };
 
 Shape.prototype.draw = function() {
-
-	// TU CÓDIGO AQUÍ: método que debe pintar en pantalla todos los bloques
-	// que forman la Pieza
+	this.block_array.forEach(x => x.draw())
 };
 
  /**************************************************
@@ -124,8 +121,13 @@ Shape.prototype.draw = function() {
  ***************************************************/
 
 Shape.prototype.can_move = function(board, dx, dy) {
-// TU CÓDIGO AQUÍ: comprobar límites para cada bloque de la pieza
-};
+	if (dx  < 0 || dx > this.width * Block.BLOCK_SIZE  || dy < 0 || dy > this.height * Block.BLOCK_SIZE) {
+		return false;
+	}
+	if (String([dx,dy]) in board.grid) {
+		return false;
+	}
+	return true;};
 
 /* Método introducido en el EJERCICIO 8 */
 
@@ -134,6 +136,15 @@ Shape.prototype.can_rotate = function(board) {
 //  TU CÓDIGO AQUÍ: calcula la fórmula de rotación para cada uno de los bloques de
 // la pieza. Si alguno de los bloques no se pudiera mover a la nueva posición,
 // devolver false. En caso contrario, true.
+	let posible = true
+	this.block_array.forEach(s => {
+		var x = this.center_block.px -this.rotation_dir*this.center_block.py + this.rotation_dir*s.py
+		var y = this.center_block.py + this.rotation_dir*this.center_block.px -this.rotation_dir*s.px
+		if (!board.can_move(x, y)) {
+			posible = false
+		}
+	})
+	return posible
 };
 
 /* Método introducido en el EJERCICIO 8 */
@@ -141,19 +152,25 @@ Shape.prototype.can_rotate = function(board) {
 Shape.prototype.rotate = function() {
 
 // TU CÓDIGO AQUÍ: básicamente tienes que aplicar la fórmula de rotación
-// (que se muestra en el enunciado de la práctica) a todos los bloques de la pieza 
-   
-
+// (que se muestra en el enunciado de la práctica) a todos los bloques de la pieza
+	this.block_array.forEach(s => {
+		s.erase()
+		var x = this.center_block.px -this.rotation_dir*this.center_block.py + this.rotation_dir*s.py
+		var y = this.center_block.py + this.rotation_dir*this.center_block.px -this.rotation_dir*s.px
+		s.px = x
+		s.py = y
+	})
+	this.draw()
   /* Deja este código al final. Por defecto las piezas deben oscilar en su
      movimiento, aunque no siempre es así (de ahí que haya que comprobarlo) */
-    if (this.shift_rotation_dir)
-            this.rotation_dir *= -1
+    if (this.shift_rotation_dir) {
+		this.rotation_dir *= -1
+	}
 };
 
 /* Método introducido en el EJERCICIO 4 */
 
 Shape.prototype.move = function(dx, dy) {
-   
 	for (block of this.blocks) {
 		block.erase();
 	}
@@ -180,48 +197,59 @@ function I_Shape(center) {
 
 }
 
-// TU CÓDIGO AQUÍ: La clase I_Shape hereda de la clase Shape
-
+I_Shape.prototype = new Shape()
+I_Shape.prototype.constructor = I_Shape;
 
 // =============== J_Shape =============================
 function J_Shape(center) {
+	var coords = [new Point(center.x + 1, center.y + 1),
+		new Point(center.x - 1, center.y),
+		new Point(center.x , center.y),
+		new Point(center.x + 1, center.y)];
 
-	// TU CÓDIGO AQUÍ: Para programar J_Shape toma como ejemplo el código de la clase I_Shape
-
+	Shape.prototype.init.call(this, coords, "orange");
 	/* atributo introducido en el EJERCICIO 8 */
-	this.shift_rotation_dir = true;
+	this.shift_rotation_dir = false;
 	this.center_block = this.blocks[1];
 	
 }
 
-// TU CÓDIGO AQUÍ: La clase J_Shape hereda de la clase Shape
+J_Shape.prototype = new Shape()
+J_Shape.prototype.constructor = J_Shape;
 
 // ============ L Shape ===========================
 function L_Shape(center) {
+	var coords = [new Point(center.x - 1, center.y+1),
+		new Point(center.x - 1, center.y),
+		new Point(center.x , center.y),
+		new Point(center.x + 1, center.y)];
 
-	// TU CÓDIGO AQUÍ: Para programar L_Shape toma como ejemplo el código de la clase I_Shape
-
+	Shape.prototype.init.call(this, coords, "cyan");
 	/* atributo introducido en el EJERCICIO 8 */
-	this.shift_rotation_dir = true;
+	this.shift_rotation_dir = false;
        this.center_block = this.blocks[1];
  
 }
-
-// TU CÓDIGO AQUÍ: La clase L_Shape hereda de la clase Shape
+L_Shape.prototype = new Shape()
+L_Shape.prototype.constructor = L_Shape;
 
 
 // ============ O Shape ===========================
 function O_Shape(center) {
+	var coords = [new Point(center.x - 1, center.y),
+		new Point(center.x - 1, center.y + 1),
+		new Point(center.x , center.y),
+		new Point(center.x , center.y + 1)];
 
-	// TU CÓDIGO AQUÍ: Para programar O_Shape toma como ejemplo el código de la clase I_Shape
-
+	Shape.prototype.init.call(this, coords, "red");
 	/* atributo introducido en el EJERCICIO 8 */
 
        this.center_block = this.blocks[0];
 
 }
 
-// TU CÓDIGO AQUÍ: La clase O_Shape hereda de la clase Shape
+O_Shape.prototype = new Shape()
+O_Shape.prototype.constructor = O_Shape;
 
 /* Código introducido en el EJERCICIO 8*/
 // O_Shape la pieza no rota. Sobreescribiremos el método can_rotate que ha heredado de la clase Shape
@@ -232,9 +260,12 @@ O_Shape.prototype.can_rotate = function(board){
 
 // ============ S Shape ===========================
 function S_Shape(center) {
+	var coords = [new Point(center.x + 1, center.y),
+		new Point(center.x, center.y + 1),
+		new Point(center.x , center.y),
+		new Point(center.x - 1 , center.y + 1)];
 
-	// TU CÓDIGO AQUÍ: Para programar S_Shape toma como ejemplo el código de la clase I_Shape
-
+	Shape.prototype.init.call(this, coords, "green");
 	/* atributo introducido en el EJERCICIO 8 */
 
 
@@ -244,36 +275,45 @@ function S_Shape(center) {
 
 }
 
-// TU CÓDIGO AQUÍ: La clase S_Shape hereda de la clase Shape
+
+S_Shape.prototype = new Shape()
+S_Shape.prototype.constructor = S_Shape;
 
 // ============ T Shape ===========================
 function T_Shape(center) {
+	var coords = [new Point(center.x + 1, center.y),
+		new Point(center.x, center.y + 1),
+		new Point(center.x , center.y),
+		new Point(center.x - 1 , center.y)];
 
-	// TU CÓDIGO AQUÍ: Para programar S_Shape toma como ejemplo el código de la clase I_Shape
-
+	Shape.prototype.init.call(this, coords, "yellow");
 
 	/* atributo introducido en el EJERCICIO 8 */
-	this.shift_rotation_dir = true;
+	this.shift_rotation_dir = false;
        this.center_block = this.blocks[1];
 
 
 }
-
-// TU CÓDIGO AQUÍ: La clase T_Shape hereda de la clase Shape
+T_Shape.prototype = new Shape()
+T_Shape.prototype.constructor = T_Shape;
 
 
 // ============ Z Shape ===========================
 function Z_Shape(center) {
 
-	// TU CÓDIGO AQUÍ: Para programar S_Shape toma como ejemplo el código de la clase I_Shape
+	var coords = [new Point(center.x + 1, center.y + 1),
+		new Point(center.x, center.y + 1),
+		new Point(center.x , center.y),
+		new Point(center.x - 1 , center.y)];
 
+	Shape.prototype.init.call(this, coords, "magenta");
 	/* atributo introducido en el EJERCICIO 8 */
 
        this.shift_rotation_dir = true;
        this.center_block = this.blocks[1];
 }
-
-// TU CÓDIGO AQUÍ: La clase Z_Shape hereda de la clase Shape
+Z_Shape.prototype = new Shape()
+Z_Shape.prototype.constructor = Z_Shape;
 
 
 // ************************************
@@ -305,8 +345,8 @@ Board.prototype.draw_shape = function(shape){
  *****************************/
 
 Board.prototype.add_shape = function(shape){
+	shape.block_array.forEach(x => this.grid[String([x.px / Block.BLOCK_SIZE,x.py /Block.BLOCK_SIZE])] = x)
 
-	// TU CÓDIGO AQUÍ: meter todos los bloques de la pieza que hemos recibido por parámetro en la estructura de datos grid
 }
 
 // ****************************
@@ -314,26 +354,31 @@ Board.prototype.add_shape = function(shape){
 // ****************************
 
 Board.prototype.can_move = function(x,y){
-
- 	// TU CÓDIGO AQUÍ: 
- 	// hasta ahora, este método siempre devolvía el valor true. Ahora,
- 	// comprueba si la posición que se le pasa como párametro está dentro de los  
-	// límites del tablero y en función de ello, devuelve true o false.
-
-	/* EJERCICIO 7 */
-	// TU CÓDIGO AQUÍ: código para detectar colisiones. Si la posición x,y está en el diccionario grid, devolver false y true en cualquier otro caso.
- 
+	if (x < 0 || x + Block.BLOCK_SIZE > this.width * Block.BLOCK_SIZE  || y < 0 || y + Block.BLOCK_SIZE > this.height * Block.BLOCK_SIZE) {
+		return false;
+	}
+	if (String([x / Block.BLOCK_SIZE,y / Block.BLOCK_SIZE]) in this.grid) {
+		return false;
+	}
 	return true;
 };
 
 Board.prototype.is_row_complete = function(y){
-// TU CÓDIGO AQUÍ: comprueba si la línea que se le pasa como parámetro
-// es completa o no (se busca en el grid).
+	var num_cols = this.width
+	for (var i = 0; i < num_cols; i++) {
+		if (!(String([i, y]) in this.grid)) {
+			return false;
+		}
+	}
+	return true
 };
 
 Board.prototype.delete_row = function(y){
-// TU CÓDIGO AQUÍ: Borra del grid y de pantalla todos los bloques de la fila y 
-};
+	for (var i = 0; i < this.width; i++) {
+		var shape = this.grid[String([i, y])]
+		shape.erase()
+		delete this.grid[String([i, y])];
+	}};
 
 Board.prototype.move_down_rows = function(y_start){
 /// TU CÓDIGO AQUÍ: 
@@ -346,6 +391,24 @@ Board.prototype.move_down_rows = function(y_start){
 //              mover el bloque hacia abajo
 //          
 //          meter el bloque en la nueva posición del grid
+	var num_cols = this.height
+	var direction = Tetris.DIRECTION['Down']
+	for (var i = y_start; i > 0; i--) {
+		for (var j = 0; j < num_cols; j++) {
+			if (String([j, i]) in this.grid) {
+				var shape = this.grid[String([j, i])]
+				shape.erase()
+				dx = direction[0] * Block.BLOCK_SIZE
+				dy = direction[1] * Block.BLOCK_SIZE
+				delete this.grid[String([j, i])]
+				while (this.can_move(shape.px + dx,shape.py + dy)) {
+					shape.erase()
+					shape.move(direction[0], direction[1])
+				}
+				this.grid[String([shape.px / Block.BLOCK_SIZE,shape.py /Block.BLOCK_SIZE])] = shape
+			}
+		}
+	}
 };
 
 Board.prototype.remove_complete_rows = function(){
@@ -354,6 +417,23 @@ Board.prototype.remove_complete_rows = function(){
 //   si la fila y está completa
 //      borrar fila y
 //      mover hacia abajo las filas superiores (es decir, move_down_rows(y-1) )
+	let i = this.height;
+	while (i > 0) {
+		if (this.is_row_complete(i)) {
+			this.delete_row(i)
+			this.move_down_rows(i-1)
+		}
+		else {
+			i--;
+		}
+	}
+	/**for ( i = 0; i < this.height; i++) {
+		if (this.is_row_complete(i)) {
+			this.delete_row(i)
+			this.move_down_rows(i-1)
+		}
+	}**/
+
 };
 
 
@@ -370,65 +450,117 @@ Tetris.BOARD_HEIGHT = 20;
 Tetris.BOARD_COLOR='white';
 
 Tetris.prototype.create_new_shape = function(){
+	const random = Math.floor(Math.random() * Tetris.SHAPES.length);
+	return new Tetris.SHAPES[random](new Point(Tetris.BOARD_WIDTH / 2, 0))
 
-	// TU CÓDIGO AQUÍ: 
-	// Elegir un nombre de pieza al azar del array Tetris.SHAPES
-	// Crear una instancia de ese tipo de pieza (x = centro del tablero, y = 0)
-	// Devolver la referencia de esa pieza nueva
 }
 
 Tetris.prototype.init = function(){
 
 	/**************
-	  EJERCICIO 4
-	***************/
+	 EJERCICIO 4
+	 ***************/
 
 	// gestor de teclado
 
 	document.addEventListener('keydown', this.key_pressed.bind(this), false);
 
-	// Obtener una nueva pieza al azar y asignarla como pieza actual 
+	// Obtener una nueva pieza al azar y asignarla como pieza actual
 
 	this.current_shape = this.create_new_shape()
-
-	// TU CÓDIGO AQUÍ: 
-	// Pintar la pieza actual en el tablero
-	// Aclaración: (Board tiene un método para pintar)
-
+	this.board.draw_shape(this.current_shape)
+	timer = setInterval(function (tetris){
+		tetris.do_move('Down')
+	}, 1000, this)
 
 }
 
-Tetris.prototype.key_pressed = function(e) { 
 
+Tetris.prototype.key_pressed = function(e) {
+	e.preventDefault()
 	var key = e.keyCode ? e.keyCode : e.which;
-
-        // TU CÓDIGO AQUÍ:
-	// en la variable key se guardará el código ASCII de la tecla que
-	// ha pulsado el usuario. ¿Cuál es el código key que corresponde 
-	// a mover la pieza hacia la izquierda, la derecha, abajo o a rotarla?
-
-	/* Introduce el código para realizar la rotación en el EJERCICIO 8. Es decir, al pulsar la flecha arriba, rotar la pieza actual */
+	var codes_keys = {
+		37 : 'Left',
+		39 : 'Right',
+		40 : 'Down',
+		38 : 'Rotate',
+		32 : 'Total_Down'
+	};
+	console.log(codes_keys[key])
+	this.do_move(codes_keys[key])
 }
 
 Tetris.prototype.do_move = function(direction) {
-
-	// TU CÓDIGO AQUÍ: el usuario ha pulsado la tecla Left, Right o Down (izquierda,
-	// derecha o abajo). Tenemos que mover la pieza en la dirección correspondiente
-	// a esa tecla. Recuerda que el array Tetris.DIRECTION guarda los desplazamientos 
-	// en cada dirección, por tanto, si accedes a Tetris.DIRECTION[direction], 
-	// obtendrás el desplazamiento (dx, dy). A continuación analiza si la pieza actual 
-	// se puede mover con ese desplazamiento. En caso afirmativo, mueve la pieza. 
-
-	/* Código que se pide en el EJERCICIO 6 */
-	// else if(direction=='Down')
-	// TU CÓDIGO AQUÍ: añade la pieza actual al grid. Crea una nueva pieza y dibújala en el tablero.
+	if (direction === 'Left' || direction === 'Down' || direction === 'Right') {
+		var desplazamiento = Tetris.DIRECTION[direction]
+		var new_positions = []
+		this.current_shape.block_array.forEach(function (b) {
+			var x_final = b.px + desplazamiento[0] * Block.BLOCK_SIZE
+			var y_final = b.py + desplazamiento[1] * Block.BLOCK_SIZE
+			new_positions.push(new Point(x_final, y_final))
+		})
+		var move = true
+		for (var i = 0; i < new_positions.length; i++) {
+			if (!this.board.can_move(new_positions[i].x, new_positions[i].y)) {
+				move = false
+			}
+		}
+		if (move) {
+			this.current_shape.move(desplazamiento[0], desplazamiento[1])
+			for (key in this.board.grid) {
+				this.board.grid[key].draw()
+			}
+			return true;
+		} else {
+			if (direction === 'Down') {
+				this.board.add_shape(this.current_shape)
+				this.current_shape = this.create_new_shape()
+				this.board.remove_complete_rows()
+				const finish = this.board.game_over(this.current_shape)
+				if (!finish) {
+					this.current_shape.draw()
+					for (key in this.board.grid) {
+						this.board.grid[key].draw()
+					}
+				} else {
+					this.current_shape.blocks.forEach(x => x.erase())
+					for (key in this.board.grid) {
+						this.board.grid[key].draw()
+					}
+				}
+				return false;
+			}
+		}
+	} else if (direction === 'Total_Down') {
+		while (this.do_move('Down')) {
+		}
+	} else if (direction === 'Rotate') {
+		this.do_rotate()
+	}
 }
 
-/***** EJERCICIO 8 ******/
+
 Tetris.prototype.do_rotate = function(){
-
-	// TU CÓDIGO AQUÍ: si la pieza actual se puede rotar, rótala. Recueda que Shape.can_rotate y Shape.rotate ya están programadas.
+	if (this.current_shape.can_rotate(this.board)) {
+		this.current_shape.rotate()
+	}
+	for (key in this.board.grid) {
+		this.board.grid[key].draw()
+	}
 }
 
-
-
+Board.prototype.game_over = function (current_shape) {
+	let puede = true
+	current_shape.block_array.forEach(x => {
+		if (String([x.px / Block.BLOCK_SIZE, x.py / Block.BLOCK_SIZE]) in this.grid) {
+			puede = false
+		}
+	})
+	if (!puede) {
+		clearInterval(timer)
+		window.alert("Game Over!!!")
+		return true;
+	} else {
+		return false;
+	}
+}

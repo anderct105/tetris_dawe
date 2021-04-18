@@ -35,11 +35,12 @@ Rectangle.prototype.setFill = function(color) { this.color = color}
 // ============== Block ===============================
 
 function Block (pos, color) {
-	this.init(new Point(pos.x * Block.BLOCK_SIZE, pos.y * Block.BLOCK_SIZE), new Point(pos.x * Block.BLOCK_SIZE + Block.BLOCK_SIZE, pos.y * Block.BLOCK_SIZE + Block.BLOCK_SIZE))
+	var p1 = new Point (pos.x*Block.BLOCK_SIZE + Block.OUTLINE_WIDTH, pos.y*Block.BLOCK_SIZE + Block.OUTLINE_WIDTH)
+	var p2 = new Point (Block.BLOCK_SIZE+pos.x*Block.BLOCK_SIZE + Block.OUTLINE_WIDTH,Block.BLOCK_SIZE+pos.y*Block.BLOCK_SIZE + Block.OUTLINE_WIDTH);
+	this.init(p1, p2)
 	this.color = color
 	this.lineWidth = Block.OUTLINE_WIDTH
 }
-
 
 
 Block.BLOCK_SIZE = 30;

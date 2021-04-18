@@ -1,42 +1,45 @@
-// ************************************
 // *     EJERCICIO 1                   *
 // ************************************
 
 // ============== Point =======================
 
-function Point (x, y) {
+function Point(x, y) {
 	this.x = x;
-	this.y = y;    
+	this.y = y;
 }
 
 // ============== Rectangle ====================
-function Rectangle() {}
+function Rectangle() {
+}
 
-Rectangle.prototype.init = function(p1,p2) {
+Rectangle.prototype.init = function (p1, p2) {
 	this.px = p1.x;
 	this.py = p1.y;
 	this.width = p2.x - p1.x;
 	this.height = p2.y - p1.y;
-	this.lineWidth= 1;
+	this.lineWidth = 1;
 	this.color = 'black';
 }
 
-Rectangle.prototype.draw = function() {
-
-	// TU CÓDIGO AQUÍ:
-	// pinta un rectángulo del color actual en pantalla en la posición px,py, con
-	// la anchura y altura actual y una línea de anchura=lineWidth. Ten en cuenta que 
-	// en este ejemplo la variable ctx es global y que guarda el contexto (context) 
-	// para pintar en el canvas.	
+Rectangle.prototype.draw = function () {
+	ctx.fillStyle = this.color
+	ctx.lineWidth = this.lineWidth
+	ctx.strokeStyle = 'black'
+	ctx.fillRect(this.px, this.py, this.width, this.height)
+	ctx.strokeRect(this.px, this.py, this.width, this.height)
 }
 
 
-Rectangle.prototype.setLineWidth = function(width) { this.lineWidth=width}
-Rectangle.prototype.setFill = function(color) { this.color = color}
+Rectangle.prototype.setLineWidth = function (width) {
+	this.lineWidth = width
+}
+Rectangle.prototype.setFill = function (color) {
+	this.color = color
+}
 
 //** Método introducido en el EJERCICIO 4 */
 
-Rectangle.prototype.move = function(x,y){
+Rectangle.prototype.move = function (x, y) {
 	this.px += x;
 	this.py += y;
 	this.draw();
@@ -44,9 +47,9 @@ Rectangle.prototype.move = function(x,y){
 
 //** Método introducido en el EJERCICIO 4 */
 
-Rectangle.prototype.erase = function(){
+Rectangle.prototype.erase = function () {
 	ctx.beginPath();
-	ctx.lineWidth = this.lineWidth+2;
+	ctx.lineWidth = this.lineWidth + 2;
 	ctx.strokeStyle = Tetris.BOARD_COLOR;
 	ctx.rect(this.px, this.py, this.width, this.height);
 	ctx.stroke();
@@ -58,41 +61,43 @@ Rectangle.prototype.erase = function(){
 
 // ============== Block ===============================
 
-function Block (pos, color) {
-
-	// TU CÓDIGO AQUÍ: este es el constructor de la clase Block. Recibe dos parámetros, pos y color. Pos = posición de la casilla, por ejemplo, (9,19).
-	// color = color que hay que emplear para pintar el bloque.
-	// Internamente este método crea dos puntos (empleando las coordenadas del pixel)
-	// y llama al método init de la clase Rectangle, pasándole como parámetro,
-	// estos dos puntos.
-	// Sería interesante que emplearas las constantes Block.BLOCK_SIZE y Block.OUTLINE_WIDTH,
-	// para establecer la anchura del bloque y la anchura de la línea, respectivamente.
+function Block(pos, color) {
+	var p1 = new Point(pos.x * Block.BLOCK_SIZE, pos.y * Block.BLOCK_SIZE)
+	var p2 = new Point(Block.BLOCK_SIZE + pos.x * Block.BLOCK_SIZE, Block.BLOCK_SIZE + pos.y * Block.BLOCK_SIZE);
+	this.init(p1, p2)
+	this.color = color
+	this.lineWidth = Block.OUTLINE_WIDTH
 }
 
 Block.BLOCK_SIZE = 30;
 Block.OUTLINE_WIDTH = 2;
 
-// TU CÓDIGO AQUÍ: emplea el patrón de herencia (Block es un Rectangle)
-
+// TU CÓDIGO: emplea el patrón de herencia (Block es un Rectangle)
+Block.prototype = new Rectangle()
+Block.prototype.constructor = Block
 /** Método introducido en el EJERCICIO 4 */
 
-
-Block.prototype.move = function(dx, dy) {
+Block.prototype.move = function (dx, dy) {
 	this.x += dx;
 	this.y += dy;
 
 	Rectangle.prototype.move.call(this, dx * Block.BLOCK_SIZE, dy * Block.BLOCK_SIZE);
 }
 
- /**************************************************
+/**************************************************
  *	 Código que se da dado para el EJERCICIO 5 *
  ***************************************************/
 
 Block.prototype.can_move = function(board, dx, dy) {
-   // TU CÓDIGO AQUÍ: toma como parámetro un increment (dx,dy)
-  // e indica si es posible mover el bloque actual si 
- // incrementáramos su posición en ese valor
+	if (dx  < 0 || dx > this.width * Block.BLOCK_SIZE  || dy < 0 || dy > this.height * Block.BLOCK_SIZE) {
+		return false;
+	}
+	if (String([dx,dy]) in board.grid) {
+		return false;
+	}
+	return true;
 }
+
 
 // ************************************
 // *      EJERCICIO 2                  *
@@ -102,31 +107,30 @@ function Shape() {}
 
 
 Shape.prototype.init = function(coords, color) {
+	this.block_array = []
+	coords.forEach(x => this.block_array.push(new Block(x, color)))
+	this.blocks = this.block_array
 
-	// TU CÓDIGO AQUÍ: método de inicialización de una Pieza del tablero
-	// Toma como parámetros: coords, un array de posiciones de los bloques
-	// que forman la Pieza y color, un string que indica el color de los bloques
-	// Post-condición: para cada coordenada, crea un bloque de ese color y lo guarda en un bloque-array
 };
 
 Shape.prototype.draw = function() {
-
-	// TU CÓDIGO AQUÍ: método que debe pintar en pantalla todos los bloques
-	// que forman la Pieza
+	this.block_array.forEach(x => x.draw())
 };
 
- /**************************************************
+/**************************************************
  *	 Código que se da dado para el EJERCICIO 5 *
  ***************************************************/
 
 Shape.prototype.can_move = function(board, dx, dy) {
-// TU CÓDIGO AQUÍ: comprobar límites para cada bloque de la pieza
-};
+	if (dx  < 0 || dx > this.width * Block.BLOCK_SIZE  || dy < 0 || dy > this.height * Block.BLOCK_SIZE) {
+		return false;
+	}
+	return true;
+}
 
-/** Método introducido en el EJERCICIO 4 */
 
 Shape.prototype.move = function(dx, dy) {
-   
+
 	for (block of this.blocks) {
 		block.erase();
 	}
@@ -141,66 +145,124 @@ Shape.prototype.move = function(dx, dy) {
 function I_Shape(center) {
 	var coords = [new Point(center.x - 2, center.y),
 		new Point(center.x - 1, center.y),
-		new Point(center.x , center.y),
+		new Point(center.x, center.y),
 		new Point(center.x + 1, center.y)];
-    
-	Shape.prototype.init.call(this, coords, "blue");   
+
+	Shape.prototype.init.call(this, coords, "blue");
 
 }
 
-// TU CÓDIGO AQUÍ: La clase I_Shape hereda de la clase Shape
+// ============= I_Shape ================================
+function I_Shape(center) {
+	var coords = [new Point(center.x - 2, center.y),
+		new Point(center.x - 1, center.y),
+		new Point(center.x, center.y),
+		new Point(center.x + 1, center.y)];
 
+	Shape.prototype.init.call(this, coords, "blue");
+
+}
+
+I_Shape.prototype = new Shape()
+I_Shape.prototype.constructor = I_Shape;
 
 // =============== J_Shape =============================
 function J_Shape(center) {
+	var coords = [new Point(center.x + 1, center.y + 1),
+		new Point(center.x - 1, center.y),
+		new Point(center.x, center.y),
+		new Point(center.x + 1, center.y)];
 
-	// TU CÓDIGO AQUÍ: Para programar J_Shape toma como ejemplo el código de la clase I_Shape
+	Shape.prototype.init.call(this, coords, "orange");
 
 }
 
-// TU CÓDIGO AQUÍ: La clase J_Shape hereda de la clase Shape
+J_Shape.prototype = new Shape()
+J_Shape.prototype.constructor = J_Shape;
 
 // ============ L Shape ===========================
 function L_Shape(center) {
+	var coords = [new Point(center.x - 1, center.y + 1),
+		new Point(center.x - 1, center.y),
+		new Point(center.x, center.y),
+		new Point(center.x + 1, center.y)];
 
-	// TU CÓDIGO AQUÍ: Para programar L_Shape toma como ejemplo el código de la clase I_Shape
+	Shape.prototype.init.call(this, coords, "cyan");
+
 }
 
-// TU CÓDIGO AQUÍ: La clase L_Shape hereda de la clase Shape
+L_Shape.prototype = new Shape()
+L_Shape.prototype.constructor = L_Shape;
 
 
 // ============ O Shape ===========================
 function O_Shape(center) {
+	var coords = [new Point(center.x - 1, center.y),
+		new Point(center.x - 1, center.y + 1),
+		new Point(center.x, center.y),
+		new Point(center.x, center.y + 1)];
 
-	// TU CÓDIGO AQUÍ: Para programar O_Shape toma como ejemplo el código de la clase I_Shape
+	Shape.prototype.init.call(this, coords, "red");
+	/* atributo introducido en el EJERCICIO 8 */
 
 }
 
-// TU CÓDIGO AQUÍ: La clase O_Shape hereda de la clase Shape
-        
+O_Shape.prototype = new Shape()
+O_Shape.prototype.constructor = O_Shape;
+
+/* Código introducido en el EJERCICIO 8*/
+// O_Shape la pieza no rota. Sobreescribiremos el método can_rotate que ha heredado de la clase Shape
+
+O_Shape.prototype.can_rotate = function (board) {
+	return false;
+};
+
 // ============ S Shape ===========================
 function S_Shape(center) {
+	var coords = [new Point(center.x + 1, center.y),
+		new Point(center.x, center.y + 1),
+		new Point(center.x, center.y),
+		new Point(center.x - 1, center.y + 1)];
 
-	// TU CÓDIGO AQUÍ: Para programar S_Shape toma como ejemplo el código de la clase I_Shape
+	Shape.prototype.init.call(this, coords, "green");
+	/* atributo introducido en el EJERCICIO 8 */
 
 }
 
-// TU CÓDIGO AQUÍ: La clase S_Shape hereda de la clase Shape
+
+S_Shape.prototype = new Shape()
+S_Shape.prototype.constructor = S_Shape;
 
 // ============ T Shape ===========================
 function T_Shape(center) {
+	var coords = [new Point(center.x + 1, center.y),
+		new Point(center.x, center.y + 1),
+		new Point(center.x, center.y),
+		new Point(center.x - 1, center.y)];
 
-	// TU CÓDIGO AQUÍ: Para programar T_Shape toma como ejemplo el código de la clase I_Shape
+	Shape.prototype.init.call(this, coords, "yellow");
+
 
 }
 
-// TU CÓDIGO AQUÍ: La clase T_Shape hereda de la clase Shape
+T_Shape.prototype = new Shape()
+T_Shape.prototype.constructor = T_Shape;
 
 
 // ============ Z Shape ===========================
 function Z_Shape(center) {
 
+	var coords = [new Point(center.x + 1, center.y + 1),
+		new Point(center.x, center.y + 1),
+		new Point(center.x, center.y),
+		new Point(center.x - 1, center.y)];
 
+	Shape.prototype.init.call(this, coords, "magenta");
+
+}
+
+Z_Shape.prototype = new Shape()
+Z_Shape.prototype.constructor = Z_Shape;
 
 // ************************************
 // *     EJERCICIO 3               *
@@ -215,7 +277,6 @@ function Board(width, height) {
 
 }
 
-
 // Si la pieza nueva puede entrar en el tablero, pintarla y devolver true.
 // Si no, devoler false
 
@@ -223,17 +284,15 @@ Board.prototype.draw_shape = function(shape){
 	if (shape.can_move(this,0,0)){
 		shape.draw();
 		return true;
-    	}
+	}
 	return false;
 }
-
  /*****************************
  *	 EJERCICIO 6          *
  *****************************/
 
 Board.prototype.add_shape = function(shape){
-
-	// TU CÓDIGO AQUÍ: meter todos los bloques de la pieza que hemos recibido por parámetro en la estructura de datos grid
+	shape.block_array.forEach(x => this.grid[String([x.px / Block.BLOCK_SIZE,x.py /Block.BLOCK_SIZE])] = x)
 }
 
 
@@ -242,11 +301,12 @@ Board.prototype.add_shape = function(shape){
 // ****************************
 
 Board.prototype.can_move = function(x,y){
-
- 	// TU CÓDIGO AQUÍ: 
- 	// hasta ahora, este método siempre devolvía el valor true. Ahora,
- 	// comprueba si la posición que se le pasa como párametro está dentro de los  
-	// límites del tablero y en función de ello, devuelve true o false.
+	if (x < 0 || x + Block.BLOCK_SIZE > this.width * Block.BLOCK_SIZE  || y < 0 || y + Block.BLOCK_SIZE > this.height * Block.BLOCK_SIZE) {
+		return false;
+	}
+	if (String([x / Block.BLOCK_SIZE,y / Block.BLOCK_SIZE]) in this.grid) {
+		return false;
+	}
 	return true;
 };
 
@@ -263,19 +323,16 @@ Tetris.BOARD_HEIGHT = 20;
 Tetris.BOARD_COLOR='white';
 
 Tetris.prototype.create_new_shape = function(){
+	const random = Math.floor(Math.random() * Tetris.SHAPES.length);
+	return new Tetris.SHAPES[random](new Point(Tetris.BOARD_WIDTH / 2, 0))
 
-	// TU CÓDIGO AQUÍ: 
-	// Elegir un nombre de pieza al azar del array Tetris.SHAPES
-	// Crear una instancia de ese tipo de pieza (x = centro del tablero, y = 0)
-	// Devolver la referencia de esa pieza nueva
-}
 }
 
 Tetris.prototype.init = function(){
 
 	/**************
-	EJERCICIO 4
-	***************/
+	 EJERCICIO 4
+	 ***************/
 
 	// gestor de teclado
 
@@ -284,36 +341,56 @@ Tetris.prototype.init = function(){
 	// Obtener una nueva pieza al azar y asignarla como pieza actual
 
 	this.current_shape = this.create_new_shape()
-
-	// TU CÓDIGO AQUÍ: 
-	// Pintar la pieza actual en el tablero
-	// Aclaración: (Board tiene un método para pintar)
+	this.board.draw_shape(this.current_shape)
 
 }
 
-Tetris.prototype.key_pressed = function(e) { 
 
+Tetris.prototype.key_pressed = function(e) {
+	e.preventDefault()
 	var key = e.keyCode ? e.keyCode : e.which;
-
-        // TU CÓDIGO AQUÍ:
-	// en la variable key se guardará el código ASCII de la tecla que
-	// ha pulsado el usuario. ¿Cuál es el código key que corresponde 
-	// a mover la pieza hacia la izquierda, la derecha, abajo o a rotarla?
-
-
+	var codes_keys = {
+		37 : 'Left',
+		39 : 'Right',
+		40 : 'Down',
+		38 : 'Rotate',
+		32 : 'Total_Down'
+	};
+	console.log(codes_keys[key])
+	this.do_move(codes_keys[key])
 }
 
 Tetris.prototype.do_move = function(direction) {
+	if (direction === 'Left' || direction === 'Down' || direction === 'Right') {
+		var desplazamiento = Tetris.DIRECTION[direction]
+		var new_positions = []
+		this.current_shape.block_array.forEach(function (b) {
+			var x_final = b.px + desplazamiento[0] * Block.BLOCK_SIZE
+			var y_final = b.py + desplazamiento[1] * Block.BLOCK_SIZE
+			new_positions.push(new Point(x_final, y_final))
+		})
+		var move = true
+		for (var i = 0; i < new_positions.length; i++) {
+			if (!this.board.can_move(new_positions[i].x, new_positions[i].y)) {
+				move = false
+			}
+		}
+		if (move) {
+			this.current_shape.move(desplazamiento[0], desplazamiento[1])
+			for (key in this.board.grid) {
+				this.board.grid[key].draw()
+			}
+			return true;
+		} else {
+			if (direction === 'Down') {
+				this.board.add_shape(this.current_shape)
+				this.current_shape = this.create_new_shape()
+				for (key in this.board.grid) {
+					this.board.grid[key].draw()
+				}
 
-	// TU CÓDIGO AQUÍ: el usuario ha pulsado la tecla Left, Right o Down (izquierda,
-	// derecha o abajo). Tenemos que mover la pieza en la dirección correspondiente
-	// a esa tecla. Recuerda que el array Tetris.DIRECTION guarda los desplazamientos 
-	// en cada dirección, por tanto, si accedes a Tetris.DIRECTION[direction], 
-	// obtendrás el desplazamiento (dx, dy). A continuación analiza si la pieza actual 
-	// se puede mover con ese desplazamiento. En caso afirmativo, mueve la pieza. 
-
-	
-	/* Código que se pide en el EJERCICIO 6 */
-	// else if(direction=='Down')
-	// TU CÓDIGO AQUÍ: añade la pieza actual al grid. Crea una nueva pieza y dibújala en el tablero.
+				}
+				return false;
+			}
+		}
 }
