@@ -1,0 +1,43 @@
+<!doctype html >
+<html >
+<head>
+    <meta charset="UTF-8">
+    <title>Tetris</title>
+   <link rel="stylesheet" href="tetris.css">
+   <script src="tetris.js"></script>
+</head>
+<body>
+    <canvas id="canvas" width="300" height="600"></canvas>
+    <span style="display: inline-block; vertical-align: top">Next: <br><canvas style="float: bottom; vertical-align: bottom" id="next_shape" width="300" height="300"></canvas></span>
+    <br>
+    <span>Dificultad: <select name="dificultades" id="dificultad">
+  <option value="facil" selected>Fácil</option>
+  <option value="normal">normal</option>
+  <option value="dificil">difícil</option>
+</select></span>
+    <br>
+    <span>Puntuacion: <label id="puntuacion">0</label></span>
+    <br>
+    <span>Objetivo: <label id="objetivo">30</label></span>
+    <br>
+    <label id="pause"></label>
+    <iframe src="musica.mp3" type="audio/mp3" allow="autoplay" id="audio" style="display:none" ></iframe>
+    <audio autoplay loop id="main_audio">
+        <source src="musica.mp3" type="audio/mp3">
+    </audio>
+    <script>
+// ===== main ====
+// canvas related variables
+var canvas = document.getElementById("canvas");
+var ctx = canvas.getContext("2d");
+var pause = false
+// clear the canvas
+ctx.fillStyle = 'white';
+ctx.fillRect(0,0,canvas.width,canvas.height);
+
+var game = new Tetris();
+game.init();
+
+</script>
+</body>
+</html>
